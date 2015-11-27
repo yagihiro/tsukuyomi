@@ -62,83 +62,89 @@ class SimpleConcurrentQueue {
   std::mutex _m;
 };
 
-template <typename SelfType>
+template <class T>
+class Channel {
+ public:
+  Channel() {
+    _th = std::thread([this] { run(); });
+  }
+  ~Channel() {
+    terminate();
+    _th.join();
+  }
+
+  void terminate() { _requested_termination = true; }
+
+  void on(const std::function<void(std::shared_ptr<T>)> &fn) { _fn = fn; }
+
+  void enqueue(std::shared_ptr<T> obj) { _q.enqueue(obj); }
+
+ private:
+  void run() {
+    while (!_requested_termination) {
+      if (!_q.empty() && _fn) {
+        _fn(_q.dequeue());
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+  }
+
+  std::thread _th;
+  SimpleConcurrentQueue<T> _q;
+
+  /// true if an user requested termination
+  volatile bool _requested_termination = false;
+
+  std::function<void(std::shared_ptr<T>)> _fn = nullptr;
+};
+
+template <class SelfType>
 class Actor {
  public:
   using AsyncFunction = std::function<void(SelfType &)>;
   using MailboxFunction = std::function<void(const std::string &)>;
 
-  Actor() : _th() {}
-
-  virtual ~Actor() {
-    terminate();
-    _th.join();
-  }
+  Actor() = default;
+  virtual ~Actor() = default;
 
   void async(const AsyncFunction &fn) {
-    init_thread();
-
-    {
-      std::lock_guard<std::mutex> lock(_m);
-      _aq.enqueue(std::make_shared<AsyncFunction>(fn));
-    }
+    lazy_init();
+    _ach.enqueue(std::make_shared<AsyncFunction>(fn));
   }
 
   void post_mailbox(const std::string &obj) {
-    init_thread();
-
-    {
-      std::lock_guard<std::mutex> lock(_m);
-      _mb.enqueue(std::make_shared<std::string>(obj));
-    }
+    lazy_init();
+    _mbch.enqueue(std::make_shared<std::string>(obj));
   }
 
   void receive_mailbox(const MailboxFunction &fn) {
-    init_thread();
-
+    lazy_init();
     _mb_fn = fn;
   }
 
-  void terminate() { _requested_termination = true; }
-
  private:
-  /// this actor thread
-  std::thread _th;
+  /// async channel
+  Channel<AsyncFunction> _ach;
 
-  /// this actor mutex
-  std::mutex _m;
+  // mailbox channel
+  Channel<std::string> _mbch;
 
-  /// true if an user requested termination
-  volatile bool _requested_termination = false;
-
-  /// async queue
-  SimpleConcurrentQueue<AsyncFunction> _aq;
+  volatile bool _initialized = false;
 
   /// mailbox queue
   SimpleConcurrentQueue<std::string> _mb;
 
   MailboxFunction _mb_fn = nullptr;
 
-  void init_thread() {
-    std::lock_guard<std::mutex> lock(_m);
-    if (_th.get_id() == std::thread::id()) {
-      _th = std::thread([this] { run(); });
-    }
-  }
+  void lazy_init() {
+    if (!_initialized) {
+      _ach.on([&](std::shared_ptr<AsyncFunction> obj) {
+        (*obj)(dynamic_cast<SelfType &>(*this));
+      });
 
-  void run() {
-    while (!_requested_termination) {
-      if (!_aq.empty()) {
-        auto a = _aq.dequeue();
-        (*a)(dynamic_cast<SelfType &>(*this));
-      }
+      _mbch.on([&](std::shared_ptr<std::string> obj) { _mb_fn(*obj); });
 
-      if (_mb_fn) {
-        auto obj = _mb.dequeue();
-        _mb_fn(*obj);
-      }
-
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      _initialized = true;
     }
   }
 
