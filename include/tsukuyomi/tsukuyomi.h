@@ -80,7 +80,7 @@ class Actor {
 
     {
       std::lock_guard<std::mutex> lock(_m);
-      _aq.emplace(fn);
+      _aq.enqueue(std::make_shared<AsyncFunction>(fn));
     }
   }
 
@@ -112,7 +112,7 @@ class Actor {
   volatile bool _requested_termination = false;
 
   /// async queue
-  std::queue<AsyncFunction> _aq;
+  SimpleConcurrentQueue<AsyncFunction> _aq;
 
   /// mailbox queue
   std::queue<std::string> _mb;
@@ -129,13 +129,8 @@ class Actor {
   void run() {
     while (!_requested_termination) {
       if (!_aq.empty()) {
-        if (_m.try_lock()) {
-          auto &fn = _aq.front();
-          _aq.pop();
-          _m.unlock();
-
-          fn(dynamic_cast<SelfType &>(*this));
-        }
+        auto a = _aq.dequeue();
+        (*a)(dynamic_cast<SelfType &>(*this));
       }
 
       if (_mb_fn) {
