@@ -34,12 +34,15 @@ namespace tsukuyomi {
 template <typename SelfType>
 class Actor {
  public:
-  using AsyncFunction = std::function<void(const SelfType &)>;
+  using AsyncFunction = std::function<void(SelfType &)>;
   using MailboxFunction = std::function<void(const std::string &)>;
 
   Actor() : _th() {}
 
-  virtual ~Actor() = default;
+  virtual ~Actor() {
+    terminate();
+    _th.join();
+  }
 
   void async(const AsyncFunction &fn) {
     init_thread();
@@ -87,7 +90,7 @@ class Actor {
 
   void init_thread() {
     std::lock_guard<std::mutex> lock(_m);
-    if (_th.get_id() == 0) {
+    if (_th.get_id() == std::thread::id()) {
       _th = std::thread([this] { run(); });
     }
   }
@@ -100,7 +103,7 @@ class Actor {
           _aq.pop();
           _m.unlock();
 
-          fn(*this);
+          fn(dynamic_cast<SelfType &>(*this));
         }
       }
 
