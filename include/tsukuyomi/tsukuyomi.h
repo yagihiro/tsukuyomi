@@ -31,6 +31,36 @@
 
 namespace tsukuyomi {
 
+template <typename T, typename Container = std::queue<T>>
+class SimpleConcurrentQueue {
+ public:
+  using container_type = Container;
+  using value_type = Container::value_type;
+  using size_type = Container::size_type;
+  using reference = Container::reference;
+  using const_reference = Container::const_reference;
+
+  SimpleConcurrentQueue() {}
+  ~SimpleConcurrentQueue() = default;
+
+  void enqueue(T &obj) {
+    std::lock_guard<std::mutex> lock(_m);
+    _q.emplace(obj);
+  }
+
+  T dequeue() {
+    std::lock_guard<std::mutex> lock(_m);
+    auto &obj = _q.front();
+    _q.pop();
+    return std::move(obj);
+  }
+  bool empty() const { return _q.empty(); }
+
+ private:
+  Container _q;
+  std::mutex _m;
+};
+
 template <typename SelfType>
 class Actor {
  public:
