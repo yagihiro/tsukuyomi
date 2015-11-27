@@ -89,7 +89,7 @@ class Actor {
 
     {
       std::lock_guard<std::mutex> lock(_m);
-      _mb.emplace(obj);
+      _mb.enqueue(std::make_shared<std::string>(obj));
     }
   }
 
@@ -115,7 +115,7 @@ class Actor {
   SimpleConcurrentQueue<AsyncFunction> _aq;
 
   /// mailbox queue
-  std::queue<std::string> _mb;
+  SimpleConcurrentQueue<std::string> _mb;
 
   MailboxFunction _mb_fn = nullptr;
 
@@ -134,13 +134,8 @@ class Actor {
       }
 
       if (_mb_fn) {
-        if (_m.try_lock()) {
-          std::string obj = _mb.front();
-          _mb.pop();
-          _m.unlock();
-
-          _mb_fn(obj);
-        }
+        auto obj = _mb.dequeue();
+        _mb_fn(*obj);
       }
 
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
