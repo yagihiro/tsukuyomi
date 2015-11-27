@@ -30,6 +30,29 @@ class Sample : public tsukuyomi::Actor<Sample> {
   void echo() { std::cout << "ECHO" << std::endl; }
 };
 
+class Echo {
+ public:
+  Echo() {
+    std::cout << "Echo construct:" << reinterpret_cast<int *>(this)
+              << std::endl;
+  }
+  ~Echo() {
+    std::cout << "Echo destruct:" << reinterpret_cast<int *>(this) << std::endl;
+  }
+  std::string echo() const { return "Echo()"; }
+};
+
+void queue_sample() {
+  tsukuyomi::SimpleConcurrentQueue<Echo> q;
+  std::shared_ptr<Echo> echo = std::make_shared<Echo>();
+  std::cout << q.empty() << std::endl;
+  q.enqueue(echo);
+  std::cout << q.empty() << std::endl;
+  auto i = q.dequeue();
+  std::cout << q.empty() << std::endl;
+  std::cout << i->echo() << std::endl;
+}
+
 int main(int argc, const char *argv[]) {
   Sample s;
 
@@ -45,6 +68,8 @@ int main(int argc, const char *argv[]) {
    ECHO
    CCC
    */
+
+  queue_sample();
 
   return 0;
 }
