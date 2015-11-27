@@ -8,6 +8,9 @@
 
 /* Begin PBXFileReference section */
 		9B3934C21C06FF03007C9C19 /* libtsukuyomi.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libtsukuyomi.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		9B3934CD1C081854007C9C19 /* include */ = {isa = PBXFileReference; lastKnownFileType = folder; name = include; path = ../../include; sourceTree = "<group>"; };
+		9B3934D41C08191C007C9C19 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; name = LICENSE; path = ../../LICENSE; sourceTree = "<group>"; };
+		9B3934D51C08191C007C9C19 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../../README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -24,7 +27,12 @@
 		9B3934B91C06FF03007C9C19 = {
 			isa = PBXGroup;
 			children = (
+				9B3934CD1C081854007C9C19 /* include */,
+				9B3934D01C081909007C9C19 /* src */,
+				9B3934D21C081909007C9C19 /* vendor */,
 				9B3934C31C06FF03007C9C19 /* Products */,
+				9B3934D41C08191C007C9C19 /* LICENSE */,
+				9B3934D51C08191C007C9C19 /* README.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -34,6 +42,22 @@
 				9B3934C21C06FF03007C9C19 /* libtsukuyomi.a */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		9B3934D01C081909007C9C19 /* src */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = src;
+			path = ../../src;
+			sourceTree = "<group>";
+		};
+		9B3934D21C081909007C9C19 /* vendor */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = vendor;
+			path = ../../vendor;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -222,6 +246,7 @@
 				9B3934C81C06FF03007C9C19 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
