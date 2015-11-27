@@ -25,32 +25,33 @@
 #define __tsukuyomi_tsukuyomi__
 
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <queue>
 #include <thread>
 
 namespace tsukuyomi {
 
-template <typename T, typename Container = std::queue<T>>
+template <class T, class Container = std::queue<std::shared_ptr<T>>>
 class SimpleConcurrentQueue {
  public:
   using container_type = Container;
-  using value_type = Container::value_type;
-  using size_type = Container::size_type;
-  using reference = Container::reference;
-  using const_reference = Container::const_reference;
+  using value_type = typename Container::value_type;
+  using size_type = typename Container::size_type;
+  using reference = typename Container::reference;
+  using const_reference = typename Container::const_reference;
 
   SimpleConcurrentQueue() {}
   ~SimpleConcurrentQueue() = default;
 
-  void enqueue(T &obj) {
+  void enqueue(std::shared_ptr<T> obj) {
     std::lock_guard<std::mutex> lock(_m);
     _q.emplace(obj);
   }
 
-  T dequeue() {
+  std::shared_ptr<T> dequeue() {
     std::lock_guard<std::mutex> lock(_m);
-    auto &obj = _q.front();
+    auto obj = _q.front();
     _q.pop();
     return std::move(obj);
   }
