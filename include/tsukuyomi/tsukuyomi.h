@@ -50,6 +50,8 @@ class SimpleConcurrentQueue {
   }
 
   std::shared_ptr<T> dequeue() {
+    if (empty()) return nullptr;
+
     std::lock_guard<std::mutex> lock(_m);
     auto obj = _q.front();
     _q.pop();
