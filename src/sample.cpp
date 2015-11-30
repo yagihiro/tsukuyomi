@@ -48,7 +48,7 @@ void queue_sample() {
   std::cout << q.empty() << std::endl;
   q.enqueue(echo);
   std::cout << q.empty() << std::endl;
-  auto i = q.dequeue();
+  auto i = q.dequeue(std::chrono::minutes(1));
   std::cout << q.empty() << std::endl;
   std::cout << i->echo() << std::endl;
 }
@@ -59,23 +59,48 @@ void cq_test() {
     int i = 0;
     do {
       _q.enqueue(std::make_shared<int>(i));
-    } while (i++ < 1000000);
+    } while (i++ < 100000);
     std::cout << "Finished enqueueing" << std::endl;
   });
   std::thread th2([]() {
     int i = 0;
     do {
-      auto value = _q.dequeue();
+      auto value = _q.try_dequeue();
       if (value == nullptr) {
         i--;
         continue;
       }
       if (*value % 1000 == 0) std::cout << *value << " ";
-    } while (i++ < 1000000);
+    } while (i++ < 100000);
     std::cout << "Finished dequeueing" << std::endl;
   });
   th1.join();
   th2.join();
+}
+
+tsukuyomi::SimpleConcurrentQueue<int> _q2;
+void cq_test2() {
+  std::thread th1([]() {
+    int i = 0;
+    do {
+      _q2.enqueue(std::make_shared<int>(i));
+    } while (i++ < 100000);
+    std::cout << "Finished enqueueing" << std::endl;
+  });
+  std::thread th2([]() {
+    int i = 0;
+    do {
+      auto value = _q2.dequeue(std::chrono::milliseconds(1));
+      if (value == nullptr) {
+        i--;
+        continue;
+      }
+      if (*value % 1000 == 0) std::cout << *value << " ";
+    } while (i++ < 100000);
+    std::cout << "Finished dequeueing" << std::endl;
+  });
+  th2.join();
+  th1.join();
 }
 
 int main(int argc, const char *argv[]) {
@@ -96,6 +121,7 @@ int main(int argc, const char *argv[]) {
 
   queue_sample();
   cq_test();
+  cq_test2();
 
   return 0;
 }

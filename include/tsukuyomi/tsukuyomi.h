@@ -49,7 +49,7 @@ class SimpleConcurrentQueue {
     _q.emplace(obj);
   }
 
-  std::shared_ptr<T> dequeue() {
+  std::shared_ptr<T> try_dequeue() {
     if (empty()) return nullptr;
 
     std::lock_guard<std::mutex> lock(_m);
@@ -57,6 +57,32 @@ class SimpleConcurrentQueue {
     _q.pop();
     return std::move(obj);
   }
+
+  template <class Rep, class Period>
+  std::shared_ptr<T> dequeue(
+      const std::chrono::duration<Rep, Period> &timeout_duration) {
+    auto start = std::chrono::steady_clock::now();
+
+    do {
+      if (!empty()) {
+        std::lock_guard<std::mutex> lock(_m);
+        auto obj = _q.front();
+        _q.pop();
+        return std::move(obj);
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+      auto current = std::chrono::steady_clock::now();
+      auto duration = current - start;
+      auto c = (timeout_duration - duration).count();
+      if (c <= 0) {
+        break;
+      }
+    } while (true);
+
+    return nullptr;
+  }
+
   bool empty() const { return _q.empty(); }
 
  private:
@@ -85,7 +111,7 @@ class Channel {
   void run() {
     while (!_requested_termination) {
       if (!_q.empty() && _fn) {
-        _fn(_q.dequeue());
+        _fn(_q.try_dequeue());
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
