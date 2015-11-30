@@ -53,6 +53,31 @@ void queue_sample() {
   std::cout << i->echo() << std::endl;
 }
 
+tsukuyomi::SimpleConcurrentQueue<int> _q;
+void cq_test() {
+  std::thread th1([]() {
+    int i = 0;
+    do {
+      _q.enqueue(std::make_shared<int>(i));
+    } while (i++ < 1000000);
+    std::cout << "Finished enqueueing" << std::endl;
+  });
+  std::thread th2([]() {
+    int i = 0;
+    do {
+      auto value = _q.dequeue();
+      if (value == nullptr) {
+        i--;
+        continue;
+      }
+      if (*value % 1000 == 0) std::cout << *value << " ";
+    } while (i++ < 1000000);
+    std::cout << "Finished dequeueing" << std::endl;
+  });
+  th1.join();
+  th2.join();
+}
+
 int main(int argc, const char *argv[]) {
   Sample s;
 
@@ -70,6 +95,7 @@ int main(int argc, const char *argv[]) {
    */
 
   queue_sample();
+  cq_test();
 
   return 0;
 }
