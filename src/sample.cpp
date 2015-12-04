@@ -22,8 +22,8 @@
  SOFTWARE.
  */
 
-#include <iostream>
 #include <tsukuyomi/tsukuyomi.h>
+#include <iostream>
 
 class Sample : public tsukuyomi::Actor<Sample> {
  public:
@@ -43,7 +43,7 @@ class Echo {
 };
 
 void queue_sample() {
-  tsukuyomi::SimpleConcurrentQueue<Echo> q;
+  SimpleConcurrentQueue<Echo> q;
   std::shared_ptr<Echo> echo = std::make_shared<Echo>();
   std::cout << q.empty() << std::endl;
   q.enqueue(echo);
@@ -53,7 +53,7 @@ void queue_sample() {
   std::cout << i->echo() << std::endl;
 }
 
-tsukuyomi::SimpleConcurrentQueue<int> _q;
+SimpleConcurrentQueue<int> _q;
 void cq_test() {
   std::thread th1([]() {
     int i = 0;
@@ -78,7 +78,7 @@ void cq_test() {
   th2.join();
 }
 
-tsukuyomi::SimpleConcurrentQueue<int> _q2;
+SimpleConcurrentQueue<int> _q2;
 void cq_test2() {
   std::thread th1([]() {
     int i = 0;

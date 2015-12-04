@@ -21,11 +21,51 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  SOFTWARE.
 */
-#ifndef __tsukuyomi_tsukuyomi__
-#define __tsukuyomi_tsukuyomi__
+#ifndef __tsukuyomi_channel__
+#define __tsukuyomi_channel__
 
-#include "actor.h"
-#include "channel.h"
+#include <functional>
+#include <memory>
+#include <thread>
 #include "simple_concurrent_queue.h"
 
-#endif
+namespace tsukuyomi {
+
+template <class T>
+class Channel {
+ public:
+  Channel() {
+    _th = std::thread([this] { run(); });
+  }
+  ~Channel() {
+    terminate();
+    _th.join();
+  }
+
+  void terminate() { _requested_termination = true; }
+
+  void on(const std::function<void(std::shared_ptr<T>)> &fn) { _fn = fn; }
+
+  void enqueue(std::shared_ptr<T> obj) { _q.enqueue(obj); }
+
+ private:
+  void run() {
+    while (!_requested_termination) {
+      if (!_q.empty() && _fn) {
+        _fn(_q.try_dequeue());
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+  }
+
+  std::thread _th;
+  SimpleConcurrentQueue<T> _q;
+
+  /// true if an user requested termination
+  volatile bool _requested_termination = false;
+
+  std::function<void(std::shared_ptr<T>)> _fn = nullptr;
+};
+}
+
+#endif  // __tsukuyomi_channel__
